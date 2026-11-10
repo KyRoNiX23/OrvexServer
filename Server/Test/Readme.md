@@ -1,0 +1,1 @@
+﻿powershell.exe -NoProfile -ExecutionPolicy Bypass -File ".\test-orvex.ps1"

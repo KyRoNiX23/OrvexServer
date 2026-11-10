@@ -1,4 +1,5 @@
 ﻿using System.Net.Sockets;
+using Orvex.Shared.Protocol;
 
 namespace Orvex.Server.Networking;
 
@@ -33,5 +34,18 @@ public sealed class ClientConnection : IAsyncDisposable
         {
             // Connection already closed.
         }
+    }
+
+    public async Task SendPacketAsync(
+    Packet packet,
+    CancellationToken cancellationToken = default)
+    {
+        byte[] data = PacketSerializer.Serialize(packet);
+
+        NetworkStream stream = Client.GetStream();
+
+        await stream.WriteAsync(
+            data.AsMemory(),
+            cancellationToken);
     }
 }

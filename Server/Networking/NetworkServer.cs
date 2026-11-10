@@ -1,8 +1,10 @@
-﻿using System.Net;
+﻿using Orvex.Server.Logging;
+using Orvex.Shared.Protocol;
+using System.Net;
 using System.Net.Sockets;
-using Orvex.Server.Logging;
 
 namespace Orvex.Server.Networking;
+using Orvex.Shared.Protocol;
 
 public sealed class NetworkServer : IAsyncDisposable
 {
@@ -11,6 +13,7 @@ public sealed class NetworkServer : IAsyncDisposable
     private Task? _acceptTask;
 
     public ConnectionManager Connections { get; } = new();
+    private readonly PacketDispatcher _dispatcher = new();
 
     public bool IsRunning { get; private set; }
 
@@ -98,19 +101,19 @@ public sealed class NetworkServer : IAsyncDisposable
         {
             NetworkStream stream = client.GetStream();
 
-            byte[] buffer = new byte[4096];
-
             while (!token.IsCancellationRequested)
             {
-                int received = await stream.ReadAsync(
-                    buffer.AsMemory(),
+                Packet? packet = await PacketReader.ReadAsync(
+                    stream,
                     token);
 
-                if (received == 0)
+                if (packet == null)
                     break;
 
-                ServerLogger.Debug(
-                    $"Received {received} bytes from {connection.Address}");
+                await _dispatcher.HandleAsync(
+                    connection,
+                    packet,
+                    token);
             }
         }
         catch (OperationCanceledException)
